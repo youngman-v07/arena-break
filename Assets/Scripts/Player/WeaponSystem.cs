@@ -1,4 +1,5 @@
 using System.Collections;
+using ArenaBreak.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,6 +18,7 @@ namespace ArenaBreak.Player
         [Header("Fire")]
         [SerializeField] private float _fireInterval = 0.15f;
         [SerializeField] private float _range = 50f;
+        [SerializeField] private int _damage = 10;
 
         [Header("Ammo")]
         [SerializeField] private int _magazineSize = 12;
@@ -100,6 +102,12 @@ namespace ArenaBreak.Player
             Ray ray = new Ray(_cameraTransform.position, _cameraTransform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, _range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
             {
+                // 벽·바닥처럼 IDamageable이 없는 대상은 명중 표시만 하고 넘어간다
+                if (hit.collider.TryGetComponent(out IDamageable damageable))
+                {
+                    damageable.TakeDamage(_damage);
+                }
+
                 SpawnHitMarker(hit.point);
             }
 

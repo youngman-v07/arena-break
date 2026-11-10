@@ -231,6 +231,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1391726872}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!134 &109626334
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ' (Instance) (Instance)'
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1 &124109409
 GameObject:
   m_ObjectHideFlags: 0
@@ -545,6 +558,19 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!134 &336862460
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1021,6 +1047,7 @@ GameObject:
   - component: {fileID: 761889570}
   - component: {fileID: 761889574}
   - component: {fileID: 761889573}
+  - component: {fileID: 761889575}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1058,7 +1085,7 @@ CharacterController:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 761889569}
-  m_Material: {fileID: 1056258954}
+  m_Material: {fileID: 109626334}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -1149,6 +1176,29 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 761889569}
   m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &761889575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761889569}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f45eed68af36784798dcc210f6b0b38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaBreak.Player.WeaponSystem
+  _inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  _reloadBinding: <Keyboard>/r
+  _cameraTransform: {fileID: 330585546}
+  _fireInterval: 0.15
+  _range: 50
+  _damage: 10
+  _magazineSize: 12
+  _reloadDuration: 1.5
+  _hitMarkerColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  _hitMarkerSize: 0.1
+  _hitMarkerLifetime: 0.5
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1198,6 +1248,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!134 &852375888
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1 &909930269
 GameObject:
   m_ObjectHideFlags: 0
@@ -1241,6 +1304,7 @@ GameObject:
   - component: {fileID: 970776038}
   - component: {fileID: 970776037}
   - component: {fileID: 970776036}
+  - component: {fileID: 970776039}
   m_Layer: 0
   m_Name: Target_3
   m_TagString: Untagged
@@ -1319,7 +1383,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 970776034}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 1711459894}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -1341,19 +1405,20 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 970776034}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!134 &1056258954
-PhysicsMaterial:
+--- !u!114 &970776039
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 970776034}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 542efff12189b49449d39c5e23a76161, type: 3}
   m_Name: 
-  serializedVersion: 2
-  m_DynamicFriction: 0.6
-  m_StaticFriction: 0.6
-  m_Bounciness: 0
-  m_FrictionCombine: 0
-  m_BounceCombine: 0
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaBreak.Core.Health
+  _maxHealth: 30
+  _currentHealth: 0
 --- !u!1 &1391726871
 GameObject:
   m_ObjectHideFlags: 0
@@ -1497,6 +1562,7 @@ GameObject:
   - component: {fileID: 1619388573}
   - component: {fileID: 1619388572}
   - component: {fileID: 1619388571}
+  - component: {fileID: 1619388574}
   m_Layer: 0
   m_Name: Target_1
   m_TagString: Untagged
@@ -1575,7 +1641,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1619388569}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 336862460}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -1597,6 +1663,33 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1619388569}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1619388574
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1619388569}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 542efff12189b49449d39c5e23a76161, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaBreak.Core.Health
+  _maxHealth: 30
+  _currentHealth: 0
+--- !u!134 &1711459894
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1 &1829278887
 GameObject:
   m_ObjectHideFlags: 0
@@ -1677,6 +1770,7 @@ GameObject:
   - component: {fileID: 2120523960}
   - component: {fileID: 2120523959}
   - component: {fileID: 2120523958}
+  - component: {fileID: 2120523961}
   m_Layer: 0
   m_Name: Target_2
   m_TagString: Untagged
@@ -1755,7 +1849,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2120523956}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 852375888}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -1777,6 +1871,20 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2120523956}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &2120523961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2120523956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 542efff12189b49449d39c5e23a76161, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaBreak.Core.Health
+  _maxHealth: 30
+  _currentHealth: 0
 --- !u!1 &2146726542
 GameObject:
   m_ObjectHideFlags: 0
