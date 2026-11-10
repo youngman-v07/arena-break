@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using ArenaBreak.Enemy;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace ArenaBreak.Core
 {
@@ -16,9 +17,18 @@ namespace ArenaBreak.Core
         [SerializeField] private Transform _spawnPoints;
         [SerializeField] private Transform _player;
 
+        [Header("Pool")]
+        [SerializeField] private int _poolDefaultCapacity = 10;
+        // 한도를 넘겨 반납된 적은 풀에 쌓이지 않고 파괴된다
+        [SerializeField] private int _poolMaxSize = 30;
+
         private readonly List<Transform> _spawnPointList = new List<Transform>();
-        // 구독 해제 대상을 알아야 하므로 스폰한 적의 Health를 들고 있는다
-        private readonly List<Health> _trackedEnemies = new List<Health>();
+        // 웨이브마다 프리팹이 다를 수 있어 프리팹별로 풀을 따로 둔다
+        private readonly Dictionary<EnemyAI, ObjectPool<EnemyAI>> _poolByPrefab = new Dictionary<EnemyAI, ObjectPool<EnemyAI>>();
+        // 반납 시 어느 풀로 돌려보낼지 알아야 한다
+        private readonly Dictionary<EnemyAI, ObjectPool<EnemyAI>> _poolByInstance = new Dictionary<EnemyAI, ObjectPool<EnemyAI>>();
+        // 풀 인스턴스는 한 번만 구독하므로, 해제 대상을 알기 위해 Health를 들고 있는다
+        private readonly List<Health> _subscribedHealths = new List<Health>();
 
         private WaitForSeconds _nextWaveWait;
         private WaitUntil _waitAllDead;
@@ -55,9 +65,27 @@ namespace ArenaBreak.Core
             StartCoroutine(RunWaves());
         }
 
-        private void OnDisable()
+        // 구독은 풀에 인스턴스를 만들 때 한 번만 하므로 OnDisable이 아니라 OnDestroy에서 해제한다
+        private void OnDestroy()
         {
-            ReleaseEnemies();
+            foreach (Health health in _subscribedHealths)
+            {
+                if (health != null)
+                {
+                    health.Died -= HandleEnemyDied;
+                }
+            }
+
+            foreach (EnemyAI enemy in _poolByInstance.Keys)
+            {
+                if (enemy != null)
+                {
+                    enemy.DeathFinished -= HandleEnemyDeathFinished;
+                }
+            }
+
+            _subscribedHealths.Clear();
+            _poolByInstance.Clear();
         }
 
         private IEnumerator RunWaves()
@@ -72,7 +100,6 @@ namespace ArenaBreak.Core
                 // 스폰 도중 앞선 적이 다 죽어도 웨이브가 끝난 것으로 보면 안 되므로 스폰이 끝난 뒤에 기다린다
                 yield return _waitAllDead;
 
-                ReleaseEnemies();
                 WaveCleared?.Invoke(waveNumber);
 
                 if (i < _waves.Count - 1)
@@ -99,17 +126,51 @@ namespace ArenaBreak.Core
             }
         }
 
-        // 풀링 대상: 웨이브마다 생성·파괴가 반복된다
         private void SpawnEnemy(EnemyAI prefab)
         {
             Transform point = _spawnPointList[Random.Range(0, _spawnPointList.Count)];
-            EnemyAI enemy = Instantiate(prefab, point.position, point.rotation);
+            EnemyAI enemy = GetPool(prefab).Get();
+
+            // 비활성 상태에서 위치를 잡고 켜야 NavMeshAgent가 이전 위치가 아니라 이 위치에 등록된다
+            enemy.transform.SetPositionAndRotation(point.position, point.rotation);
             enemy.SetPlayer(_player);
+            enemy.gameObject.SetActive(true);
+
+            _aliveCount++;
+        }
+
+        private ObjectPool<EnemyAI> GetPool(EnemyAI prefab)
+        {
+            if (_poolByPrefab.TryGetValue(prefab, out ObjectPool<EnemyAI> pool))
+            {
+                return pool;
+            }
+
+            pool = new ObjectPool<EnemyAI>(
+                createFunc: () => CreateEnemy(prefab),
+                actionOnRelease: enemy => enemy.gameObject.SetActive(false),
+                actionOnDestroy: enemy => Destroy(enemy.gameObject),
+                defaultCapacity: _poolDefaultCapacity,
+                maxSize: _poolMaxSize);
+
+            _poolByPrefab.Add(prefab, pool);
+            return pool;
+        }
+
+        private EnemyAI CreateEnemy(EnemyAI prefab)
+        {
+            EnemyAI enemy = Instantiate(prefab);
+            // Get 직후 위치를 잡고 켜기 위해 만들자마자 꺼 둔다
+            enemy.gameObject.SetActive(false);
 
             Health health = enemy.GetComponent<Health>();
             health.Died += HandleEnemyDied;
-            _trackedEnemies.Add(health);
-            _aliveCount++;
+            _subscribedHealths.Add(health);
+
+            enemy.DeathFinished += HandleEnemyDeathFinished;
+            _poolByInstance.Add(enemy, _poolByPrefab[prefab]);
+
+            return enemy;
         }
 
         private void HandleEnemyDied()
@@ -117,22 +178,14 @@ namespace ArenaBreak.Core
             _aliveCount--;
         }
 
+        private void HandleEnemyDeathFinished(EnemyAI enemy)
+        {
+            _poolByInstance[enemy].Release(enemy);
+        }
+
         private bool AreAllEnemiesDead()
         {
             return _aliveCount == 0;
-        }
-
-        private void ReleaseEnemies()
-        {
-            foreach (Health health in _trackedEnemies)
-            {
-                if (health != null)
-                {
-                    health.Died -= HandleEnemyDied;
-                }
-            }
-
-            _trackedEnemies.Clear();
         }
     }
 }

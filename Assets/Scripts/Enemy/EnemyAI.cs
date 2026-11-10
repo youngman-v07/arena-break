@@ -42,6 +42,9 @@ namespace ArenaBreak.Enemy
         private State _state = State.Idle;
         private float _nextAttackTime;
 
+        // 풀이 구독하면 파괴 대신 반납하도록 사망 연출이 끝났음을 알린다
+        public event System.Action<EnemyAI> DeathFinished;
+
         private void Awake()
         {
             _agent = GetComponent<NavMeshAgent>();
@@ -54,6 +57,16 @@ namespace ArenaBreak.Enemy
         private void OnEnable()
         {
             _health.Died += HandleDied;
+
+            // 풀에서 재사용될 때 이전 생애의 Dead 상태와 공격 쿨다운이 남지 않게 한다
+            _state = State.Idle;
+            _nextAttackTime = 0f;
+
+            // NavMesh에 올라가기 전에는 agent 호출이 에러를 낸다
+            if (_agent.isOnNavMesh)
+            {
+                _agent.isStopped = false;
+            }
         }
 
         private void OnDisable()
@@ -136,13 +149,22 @@ namespace ArenaBreak.Enemy
                 _agent.isStopped = true;
             }
 
-            StartCoroutine(DestroyRoutine());
+            StartCoroutine(FinishDeathRoutine());
         }
 
-        private IEnumerator DestroyRoutine()
+        private IEnumerator FinishDeathRoutine()
         {
             yield return _destroyWait;
-            Destroy(gameObject);
+
+            // 씬에 직접 둔 적처럼 풀에 속하지 않으면 구독자가 없으므로 기존대로 파괴한다
+            if (DeathFinished != null)
+            {
+                DeathFinished.Invoke(this);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
 
         private void CachePlayerDamageable()

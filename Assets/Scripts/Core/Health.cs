@@ -23,9 +23,12 @@ namespace ArenaBreak.Core
         public event Action<int, int> HealthChanged;
         public event Action Died;
 
-        private void Awake()
+        // 풀에서 다시 꺼낼 때 이전 사망 상태가 남지 않도록 Awake가 아니라 활성화마다 초기화한다
+        private void OnEnable()
         {
             _currentHealth = _maxHealth;
+            _isDead = false;
+            _invincibleUntil = 0f;
         }
 
         public void TakeDamage(int amount)
