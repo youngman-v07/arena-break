@@ -27,6 +27,9 @@ namespace ArenaBreak.Core
         private readonly Dictionary<EnemyAI, ObjectPool<EnemyAI>> _poolByPrefab = new Dictionary<EnemyAI, ObjectPool<EnemyAI>>();
         // 반납 시 어느 풀로 돌려보낼지 알아야 한다
         private readonly Dictionary<EnemyAI, ObjectPool<EnemyAI>> _poolByInstance = new Dictionary<EnemyAI, ObjectPool<EnemyAI>>();
+        // 원거리 적은 EnemyAI와 타입이 달라 풀을 따로 둔다
+        private readonly Dictionary<RangedEnemyAI, ObjectPool<RangedEnemyAI>> _rangedPoolByPrefab = new Dictionary<RangedEnemyAI, ObjectPool<RangedEnemyAI>>();
+        private readonly Dictionary<RangedEnemyAI, ObjectPool<RangedEnemyAI>> _rangedPoolByInstance = new Dictionary<RangedEnemyAI, ObjectPool<RangedEnemyAI>>();
         // 풀 인스턴스는 한 번만 구독하므로, 해제 대상을 알기 위해 Health를 들고 있는다
         private readonly List<Health> _subscribedHealths = new List<Health>();
 
@@ -84,8 +87,17 @@ namespace ArenaBreak.Core
                 }
             }
 
+            foreach (RangedEnemyAI enemy in _rangedPoolByInstance.Keys)
+            {
+                if (enemy != null)
+                {
+                    enemy.DeathFinished -= HandleRangedDeathFinished;
+                }
+            }
+
             _subscribedHealths.Clear();
             _poolByInstance.Clear();
+            _rangedPoolByInstance.Clear();
         }
 
         private IEnumerator RunWaves()
@@ -114,21 +126,35 @@ namespace ArenaBreak.Core
         private IEnumerator SpawnWave(WaveData wave)
         {
             WaitForSeconds intervalWait = new WaitForSeconds(wave.SpawnInterval);
+            int rangedLeft = wave.RangedSpawnCount;
+            int meleeLeft = wave.SpawnCount - rangedLeft;
 
-            for (int n = 0; n < wave.SpawnCount; n++)
+            while (meleeLeft + rangedLeft > 0)
             {
-                SpawnEnemy(wave.EnemyPrefab);
+                // 남은 수의 비율로 뽑아야 두 종류가 섞이면서도 웨이브가 정해진 수를 정확히 채운다
+                bool spawnRanged = Random.Range(0, meleeLeft + rangedLeft) < rangedLeft;
 
-                if (n < wave.SpawnCount - 1)
+                if (spawnRanged)
+                {
+                    SpawnRanged(wave.RangedEnemyPrefab);
+                    rangedLeft--;
+                }
+                else
+                {
+                    SpawnMelee(wave.EnemyPrefab);
+                    meleeLeft--;
+                }
+
+                if (meleeLeft + rangedLeft > 0)
                 {
                     yield return intervalWait;
                 }
             }
         }
 
-        private void SpawnEnemy(EnemyAI prefab)
+        private void SpawnMelee(EnemyAI prefab)
         {
-            Transform point = _spawnPointList[Random.Range(0, _spawnPointList.Count)];
+            Transform point = GetRandomSpawnPoint();
             EnemyAI enemy = GetPool(prefab).Get();
 
             // 비활성 상태에서 위치를 잡고 켜야 NavMeshAgent가 이전 위치가 아니라 이 위치에 등록된다
@@ -137,6 +163,23 @@ namespace ArenaBreak.Core
             enemy.gameObject.SetActive(true);
 
             _aliveCount++;
+        }
+
+        private void SpawnRanged(RangedEnemyAI prefab)
+        {
+            Transform point = GetRandomSpawnPoint();
+            RangedEnemyAI enemy = GetRangedPool(prefab).Get();
+
+            enemy.transform.SetPositionAndRotation(point.position, point.rotation);
+            enemy.SetPlayer(_player);
+            enemy.gameObject.SetActive(true);
+
+            _aliveCount++;
+        }
+
+        private Transform GetRandomSpawnPoint()
+        {
+            return _spawnPointList[Random.Range(0, _spawnPointList.Count)];
         }
 
         private ObjectPool<EnemyAI> GetPool(EnemyAI prefab)
@@ -157,6 +200,24 @@ namespace ArenaBreak.Core
             return pool;
         }
 
+        private ObjectPool<RangedEnemyAI> GetRangedPool(RangedEnemyAI prefab)
+        {
+            if (_rangedPoolByPrefab.TryGetValue(prefab, out ObjectPool<RangedEnemyAI> pool))
+            {
+                return pool;
+            }
+
+            pool = new ObjectPool<RangedEnemyAI>(
+                createFunc: () => CreateRangedEnemy(prefab),
+                actionOnRelease: enemy => enemy.gameObject.SetActive(false),
+                actionOnDestroy: enemy => Destroy(enemy.gameObject),
+                defaultCapacity: _poolDefaultCapacity,
+                maxSize: _poolMaxSize);
+
+            _rangedPoolByPrefab.Add(prefab, pool);
+            return pool;
+        }
+
         private EnemyAI CreateEnemy(EnemyAI prefab)
         {
             EnemyAI enemy = Instantiate(prefab);
@@ -173,6 +234,21 @@ namespace ArenaBreak.Core
             return enemy;
         }
 
+        private RangedEnemyAI CreateRangedEnemy(RangedEnemyAI prefab)
+        {
+            RangedEnemyAI enemy = Instantiate(prefab);
+            enemy.gameObject.SetActive(false);
+
+            Health health = enemy.GetComponent<Health>();
+            health.Died += HandleEnemyDied;
+            _subscribedHealths.Add(health);
+
+            enemy.DeathFinished += HandleRangedDeathFinished;
+            _rangedPoolByInstance.Add(enemy, _rangedPoolByPrefab[prefab]);
+
+            return enemy;
+        }
+
         private void HandleEnemyDied()
         {
             _aliveCount--;
@@ -181,6 +257,11 @@ namespace ArenaBreak.Core
         private void HandleEnemyDeathFinished(EnemyAI enemy)
         {
             _poolByInstance[enemy].Release(enemy);
+        }
+
+        private void HandleRangedDeathFinished(RangedEnemyAI enemy)
+        {
+            _rangedPoolByInstance[enemy].Release(enemy);
         }
 
         private bool AreAllEnemiesDead()
