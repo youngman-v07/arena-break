@@ -40,6 +40,11 @@ namespace ArenaBreak.Player
         // 마커마다 renderer.material로 복제하면 머티리얼이 누수되므로 하나를 공유한다
         private Material _hitMarkerMaterial;
 
+        // 스킬이 켜고 끄는 스위치. 탄약 판정을 무기가 쥐고 있어야 재장전·탄약 이벤트와 어긋나지 않는다
+        public bool InfiniteAmmo { get; set; }
+
+        public event System.Action<int, int> AmmoChanged;
+
         private void Awake()
         {
             InputActionMap playerMap = _inputActions.FindActionMap("Player", throwIfNotFound: true);
@@ -48,6 +53,12 @@ namespace ArenaBreak.Player
 
             _currentAmmo = _magazineSize;
             _reloadWait = new WaitForSeconds(_reloadDuration);
+        }
+
+        // HUD는 OnEnable에서 구독하므로, 초기 탄약은 모든 OnEnable이 끝난 Start에서 알려야 놓치지 않는다
+        private void Start()
+        {
+            AmmoChanged?.Invoke(_currentAmmo, _magazineSize);
         }
 
         private void OnEnable()
@@ -91,13 +102,17 @@ namespace ArenaBreak.Player
 
         private void TryFire()
         {
-            if (_isReloading || _currentAmmo <= 0 || Time.time < _nextFireTime)
+            if (_isReloading || (!InfiniteAmmo && _currentAmmo <= 0) || Time.time < _nextFireTime)
             {
                 return;
             }
 
             _nextFireTime = Time.time + _fireInterval;
-            _currentAmmo--;
+
+            if (!InfiniteAmmo)
+            {
+                _currentAmmo--;
+            }
 
             Ray ray = new Ray(_cameraTransform.position, _cameraTransform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, _range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
@@ -111,8 +126,11 @@ namespace ArenaBreak.Player
                 SpawnHitMarker(hit.point);
             }
 
-            // TODO(3장): HUD 이벤트로 옮긴 뒤 삭제
-            Debug.LogFormat("[Weapon] Fire - Ammo {0}/{1}", _currentAmmo, _magazineSize);
+            // 무한 탄약 중에는 탄약이 변하지 않으므로 HUD에 알릴 일이 없다
+            if (!InfiniteAmmo)
+            {
+                AmmoChanged?.Invoke(_currentAmmo, _magazineSize);
+            }
         }
 
         private void TryReload()
@@ -133,8 +151,7 @@ namespace ArenaBreak.Player
             _currentAmmo = _magazineSize;
             _isReloading = false;
 
-            // TODO(3장): HUD 이벤트로 옮긴 뒤 삭제
-            Debug.LogFormat("[Weapon] Reloaded - Ammo {0}/{1}", _currentAmmo, _magazineSize);
+            AmmoChanged?.Invoke(_currentAmmo, _magazineSize);
         }
 
         // 풀링 대상: 연사 중 0.15초마다 생성·파괴된다

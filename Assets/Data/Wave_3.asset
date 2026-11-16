@@ -17,3 +17,5 @@ MonoBehaviour:
   _spawnInterval: 0.6
   _rangedEnemyPrefab: {fileID: 7865543833494427999, guid: bc673f9f085aedf48a9583902d60991a, type: 3}
   _rangedSpawnCount: 3
+  _chargerEnemyPrefab: {fileID: 2304462820633863102, guid: 25b0ac4c27227964785b15567ce475c4, type: 3}
+  _chargerSpawnCount: 1

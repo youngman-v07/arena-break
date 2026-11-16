@@ -42,6 +42,9 @@ namespace ArenaBreak.Enemy
         private State _state = State.Idle;
         private float _nextAttackTime;
 
+        // 돌진처럼 플레이어 방향이 필요한 확장 컴포넌트가 읽는다. 값은 SetPlayer로만 바뀐다
+        public Transform Player => _player;
+
         // 풀이 구독하면 파괴 대신 반납하도록 사망 연출이 끝났음을 알린다
         public event System.Action<EnemyAI> DeathFinished;
 

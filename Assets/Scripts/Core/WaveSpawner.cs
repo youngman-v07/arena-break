@@ -36,8 +36,10 @@ namespace ArenaBreak.Core
         private WaitForSeconds _nextWaveWait;
         private WaitUntil _waitAllDead;
         private int _aliveCount;
+        private int _killCount;
 
         public event System.Action<int> WaveStarted;
+        public event System.Action<int> KillCountChanged;
         public event System.Action<int> WaveCleared;
         public event System.Action AllWavesCleared;
 
@@ -127,17 +129,24 @@ namespace ArenaBreak.Core
         {
             WaitForSeconds intervalWait = new WaitForSeconds(wave.SpawnInterval);
             int rangedLeft = wave.RangedSpawnCount;
-            int meleeLeft = wave.SpawnCount - rangedLeft;
+            int chargerLeft = wave.ChargerSpawnCount;
+            int meleeLeft = wave.SpawnCount - rangedLeft - chargerLeft;
 
-            while (meleeLeft + rangedLeft > 0)
+            while (meleeLeft + rangedLeft + chargerLeft > 0)
             {
-                // 남은 수의 비율로 뽑아야 두 종류가 섞이면서도 웨이브가 정해진 수를 정확히 채운다
-                bool spawnRanged = Random.Range(0, meleeLeft + rangedLeft) < rangedLeft;
+                // 남은 수의 비율로 뽑아야 종류가 섞이면서도 웨이브가 정해진 수를 정확히 채운다
+                int pick = Random.Range(0, meleeLeft + rangedLeft + chargerLeft);
 
-                if (spawnRanged)
+                if (pick < rangedLeft)
                 {
                     SpawnRanged(wave.RangedEnemyPrefab);
                     rangedLeft--;
+                }
+                else if (pick < rangedLeft + chargerLeft)
+                {
+                    // 돌진 적도 EnemyAI라 근접 적 스폰 경로와 풀을 그대로 쓴다
+                    SpawnMelee(wave.ChargerEnemyPrefab);
+                    chargerLeft--;
                 }
                 else
                 {
@@ -145,7 +154,7 @@ namespace ArenaBreak.Core
                     meleeLeft--;
                 }
 
-                if (meleeLeft + rangedLeft > 0)
+                if (meleeLeft + rangedLeft + chargerLeft > 0)
                 {
                     yield return intervalWait;
                 }
@@ -252,6 +261,8 @@ namespace ArenaBreak.Core
         private void HandleEnemyDied()
         {
             _aliveCount--;
+            _killCount++;
+            KillCountChanged?.Invoke(_killCount);
         }
 
         private void HandleEnemyDeathFinished(EnemyAI enemy)

@@ -15,6 +15,8 @@ namespace ArenaBreak.Core
         Cleared
     }
 
+    // 같은 오브젝트에 두 개가 붙으면 한쪽은 참조가 비어 OnEnable에서 NullReferenceException을 낸다
+    [DisallowMultipleComponent]
     public class GameManager : MonoBehaviour
     {
         [Header("Flow")]
@@ -37,6 +39,7 @@ namespace ArenaBreak.Core
         private InputAction _quitAction;
         private WaitForSeconds _readyWait;
         private Coroutine _readyRoutine;
+        private bool _hasReferences;
 
         public GameState CurrentState { get; private set; } = GameState.Ready;
 
@@ -47,6 +50,14 @@ namespace ArenaBreak.Core
             _restartAction = new InputAction("Restart", InputActionType.Button, _restartBinding);
             _quitAction = new InputAction("Quit", InputActionType.Button, _quitBinding);
             _readyWait = new WaitForSeconds(_readyDuration);
+
+            // 칸이 비어 있으면 이후 모든 콜백이 NullReferenceException을 내므로, 원인을 알리고 스스로 꺼서 연쇄 에러를 막는다
+            _hasReferences = _playerHealth != null && _waveSpawner != null && _playerController != null && _weaponSystem != null;
+            if (!_hasReferences)
+            {
+                Debug.LogError("[GameManager] 참조 칸(Player Health / Wave Spawner / Player Controller / Weapon System)이 비어 있어 비활성화한다", this);
+                enabled = false;
+            }
         }
 
         private void OnEnable()
@@ -60,6 +71,12 @@ namespace ArenaBreak.Core
 
         private void OnDisable()
         {
+            // Awake에서 스스로 꺼진 경우 구독한 적이 없다
+            if (!_hasReferences)
+            {
+                return;
+            }
+
             _playerHealth.Died -= HandlePlayerDied;
             _waveSpawner.AllWavesCleared -= HandleAllWavesCleared;
 

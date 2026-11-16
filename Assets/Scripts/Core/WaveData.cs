@@ -17,6 +17,12 @@ namespace ArenaBreak.Core
         // 위 스폰 수 중 원거리 적이 차지하는 수
         [SerializeField] private int _rangedSpawnCount;
 
+        [Header("Charger")]
+        // EnemyAI에 ChargeAbility를 붙인 프리팹이라 근접 적과 같은 풀 경로를 쓴다
+        [SerializeField] private EnemyAI _chargerEnemyPrefab;
+        // 위 스폰 수 중 돌진 적이 차지하는 수
+        [SerializeField] private int _chargerSpawnCount;
+
         public EnemyAI EnemyPrefab => _enemyPrefab;
         public int SpawnCount => _spawnCount;
         public float SpawnInterval => _spawnInterval;
@@ -24,5 +30,10 @@ namespace ArenaBreak.Core
 
         // 프리팹이 없거나 총 수를 넘기면 그만큼은 근접 적으로 채워 웨이브 총 수가 어긋나지 않게 한다
         public int RangedSpawnCount => _rangedEnemyPrefab == null ? 0 : Mathf.Clamp(_rangedSpawnCount, 0, _spawnCount);
+
+        public EnemyAI ChargerEnemyPrefab => _chargerEnemyPrefab;
+
+        // 원거리 적이 먼저 자리를 차지하고 남은 수 안에서만 돌진 적을 둬야 웨이브 총 수가 어긋나지 않는다
+        public int ChargerSpawnCount => _chargerEnemyPrefab == null ? 0 : Mathf.Clamp(_chargerSpawnCount, 0, _spawnCount - RangedSpawnCount);
     }
 }
